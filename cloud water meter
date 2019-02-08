@@ -1,3 +1,8 @@
+/* this is code for ESP8266
+this will measure water flow and report to cloud - thingspeak liters of water flowing through the sensor
+I have pieced code into one from various sources to build this one and found to be working for me with my setup
+you can freely use and distribute */
+
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
 #include <Arduino.h>
