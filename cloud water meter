@@ -1,0 +1,99 @@
+#include <ESP8266WiFi.h>
+#include <ESP8266HTTPClient.h>
+#include <Arduino.h>
+#include <EEPROM.h>
+#define USE_SERIAL Serial
+
+WiFiClient client;
+
+String thingSpeakAddress= "http://api.thingspeak.com/update?";
+String writeAPIKey;
+String tsfield1Name;
+String request_string;
+
+HTTPClient http;
+
+// Variable init for couter
+  const int  buttonPin = D2; // variable for D2 pin
+  int contagem = 0;   // variable to store the “rise ups” from the flowmeter pulses
+  int liters = 0;
+  char thingspeak_string[200]; //string used to send info to the server ThingSpeak
+  char liters_string[10]="0";
+  int addr = 0; //eeprom address
+
+//Interrupt function, so that the counting of pulse “rise ups” dont interfere with the rest of the code  (attachInterrupt)
+  void pin_ISR()
+  {   
+      contagem++;
+  }
+
+
+void setup()
+{
+
+// Serial Comunication init
+   Serial.begin(115200);
+   delay(10);
+
+// Initialization of the variable “buttonPin” as INPUT (D2 pin)
+   pinMode(buttonPin, INPUT);
+
+   // wifi conection
+   WiFi.disconnect();
+   Serial.println();
+   Serial.print("Connecting to network...");
+   Serial.println();
+   WiFi.begin("ssid","pswd"); // put you wifi ssid/pswd
+
+//Waiting for the connection to be established
+   Serial.print("Waiting for the connection..."); 
+   while (WiFi.status() != WL_CONNECTED)
+    {
+      delay(2000);
+      Serial.print(".");
+
+      if(WiFi.status() == WL_CONNECTED)
+      {
+        Serial.println();
+        Serial.println("Connected");
+      }
+    }
+// Attach an interrupt to the ISR vector
+  attachInterrupt(digitalPinToInterrupt(buttonPin), pin_ISR, RISING);
+  Serial.println();
+  Serial.print("Waiting for meter....");
+  Serial.println();
+}
+
+
+void loop()
+{
+//count one litre more.
+  if(contagem > 440 )
+  {
+      liters++;
+      Serial.println();
+      Serial.print("liters: ");
+      Serial.print(liters);
+      contagem = 0;
+      
+// send to thingspeak
+    if (client.connect("api.thingspeak.com",80)) 
+    {
+      request_string = thingSpeakAddress;
+      request_string += "key=";
+      request_string += "APIKEY"; // put your thingspeak API key
+      request_string += "&";
+      request_string += "field1"; // put the field to which you want to write the value
+      request_string += "=";
+      request_string += liters;
+      http.begin(request_string);
+      http.GET();
+      http.end();
+      Serial.println();
+      Serial.print("uploaded to thingspeak sucessful...............");
+    }
+    delay(15000);
+
+  }//stop counting
+}
